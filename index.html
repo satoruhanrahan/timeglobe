@@ -36,10 +36,10 @@
       position: absolute;
       top: 12px;
       left: 12px;
-      right: 12px;
+      right: 60px;
       display: flex;
-      gap: 12px;
-      align-items: center;
+      flex-direction: column;
+      gap: 8px;
       padding: 10px 12px;
       background: rgba(10, 12, 16, 0.72);
       color: #fff;
@@ -49,7 +49,7 @@
       z-index: 10;
     }
 
-    #ui .group {
+    #ui .row {
       display: flex;
       gap: 8px;
       align-items: center;
@@ -59,10 +59,12 @@
     #yearLabel {
       min-width: 140px;
       font-weight: 700;
+      flex-shrink: 0;
     }
 
     #yearSlider {
-      width: min(520px, 45vw);
+      flex: 1;
+      min-width: 200px;
     }
 
     button {
@@ -186,12 +188,11 @@
     <div id="cesiumContainer"></div>
 
     <div id="ui">
-      <div class="group">
+      <div class="row">
         <div id="yearLabel">Year: <span id="yearText"></span></div>
         <input id="yearSlider" type="range" min="-3000" max="1980" step="1" value="0" />
       </div>
-
-      <div class="group" style="margin-left:auto;">
+      <div class="row">
         <button class="eraBtn" data-era="ALL">All</button>
         <button class="eraBtn" data-era="ANCIENT">Ancient</button>
         <button class="eraBtn" data-era="CLASSICAL">Classical</button>
@@ -215,7 +216,8 @@
     </div>
 
     <div id="hint">
-      <b>Tips:</b> Drag the year slider to filter pins by era. Click a pin to see the scene and its AI video prompt.
+      <b>Tips:</b> In <b>All</b> mode, drag the year slider to explore history. Select an era to see all scenes from
+      that period at once.
       <br />
       <span style="display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:6px">
         <span>🟡 Ancient</span>
@@ -245,7 +247,7 @@
         title: "Giza plateau during pyramid construction",
         era: "ANCIENT",
         lat: 29.9792, lon: 31.1342,
-        start: -2560, end: -2540,
+        start: -3000, end: -500,
         confidence: "inferred",
         description: "Workers haul limestone blocks on wooden sledges along a ramp. Overseers direct teams; the half-built Great Pyramid rises behind. Dust, heat, and the sound of stone on stone. Workers were paid labourers, not slaves — they ate well and received medical care.",
         source_notes: "Workforce villages excavated at Giza confirm paid labour. Ramp design is debated; internal spiral ramp is one current hypothesis. Sledge haulage is archaeologically attested.",
@@ -257,7 +259,7 @@
         title: "Mohenjo-daro street life",
         era: "ANCIENT",
         lat: 27.3244, lon: 68.1375,
-        start: -2500, end: -1900,
+        start: -3000, end: -500,
         confidence: "inferred",
         description: "A busy street in the world's first planned city. Baked brick buildings line wide, grid-pattern lanes. A merchant weighs goods on standardised bronze weights; children play near a drainage channel. The Indus script remains undeciphered.",
         source_notes: "Grid street layout, standardised weights, and covered drainage are archaeologically attested at Mohenjo-daro. Daily life details are reconstructed from artefacts. Script not yet translated.",
@@ -269,7 +271,7 @@
         title: "La Venta ceremonial centre",
         era: "ANCIENT",
         lat: 18.1070, lon: -94.0400,
-        start: -900, end: -400,
+        start: -3000, end: -500,
         confidence: "inferred",
         description: "Priests perform a ritual before a colossal basalt head. Green jungle surrounds the earthen pyramid. Olmec blue-green jade figurines are arranged in the earth below as a cache offering. The Olmec are the mother culture of Mesoamerica.",
         source_notes: "Colossal heads and jade caches are archaeologically attested at La Venta. Ritual use of the site is confirmed; specific ceremony is reconstructed from archaeological context.",
@@ -283,7 +285,7 @@
         title: "Athens agora at midday",
         era: "CLASSICAL",
         lat: 37.9755, lon: 23.7219,
-        start: -430, end: -400,
+        start: -500, end: 500,
         confidence: "inferred",
         description: "The heart of Athenian democracy. Citizens in white chitons argue philosophy and politics beneath stoa colonnades. A silver coin changes hands at a money-changer's table. Socrates might be here, barefoot as usual. The Acropolis gleams with fresh white marble above.",
         source_notes: "Agora layout extensively excavated by American School of Classical Studies. Stoa of Attalos reconstructed. Money-changing attested in sources. Socrates active in Athens c.470–399 BCE.",
@@ -295,7 +297,7 @@
         title: "Dunhuang oasis caravan stop",
         era: "CLASSICAL",
         lat: 40.1421, lon: 94.6618,
-        start: 100, end: 300,
+        start: -500, end: 500,
         confidence: "inferred",
         description: "A Silk Road caravan rests at the Dunhuang oasis. Bactrian camels are unloaded; merchants from Parthia, China, and India exchange silk, spices, and glassware in a multilingual bazaar. The nearby caves will one day hold the world's oldest printed book.",
         source_notes: "Dunhuang was a major Silk Road waystation confirmed by Han dynasty records and archaeological finds. Multicultural merchant mixing is well documented. Cave paintings and manuscripts confirm cultural exchange.",
@@ -307,7 +309,7 @@
         title: "Rome — the Forum at its height",
         era: "CLASSICAL",
         lat: 41.8925, lon: 12.4853,
-        start: 100, end: 180,
+        start: -500, end: 500,
         confidence: "inferred",
         description: "The Roman Forum in Trajan's era — the political and commercial heart of a million-person city. Senators in togas, merchants, slaves, and soldiers share the marble-paved space. The Colosseum is visible to the east. Latin is the language of power; Greek, the language of culture.",
         source_notes: "Forum layout and population estimates for imperial Rome are well established. Trajan's column and markets are contemporary. Multilingual nature of Rome confirmed by inscriptions.",
@@ -319,7 +321,7 @@
         title: "Tikal — temple city at dawn",
         era: "CLASSICAL",
         lat: 17.2220, lon: -89.6237,
-        start: 400, end: 800,
+        start: -500, end: 500,
         confidence: "inferred",
         description: "Dawn over the Maya city of Tikal. Temple I rises 47 metres above the jungle canopy. Priests descend the steep staircase after a dawn ceremony. Howler monkeys call from the ceiba trees. At its peak Tikal held 100,000 people and controlled a vast trade network.",
         source_notes: "Tikal extensively excavated; Temple I dated to c.732 CE. Population estimates 60,000–100,000. Dawn ceremonies inferred from Maya calendar and astronomical alignments.",
@@ -345,7 +347,7 @@
         title: "Timbuktu — centre of Islamic scholarship",
         era: "MEDIEVAL",
         lat: 16.7735, lon: -3.0074,
-        start: 1300, end: 1500,
+        start: 500, end: 1500,
         confidence: "inferred",
         description: "Timbuktu at its height under the Mali Empire. The Sankore mosque and university hold 25,000 students — the largest university in the medieval world. Scholars copy manuscripts by candlelight; gold and salt caravans pass through the mud-brick streets outside.",
         source_notes: "Sankore University's size documented in Arabic and West African sources. Mali Empire gold-salt trade well attested. Manuscript tradition confirmed by surviving Timbuktu manuscripts.",
@@ -357,7 +359,7 @@
         title: "Yayoi Japan — rice paddy ceremony",
         era: "MEDIEVAL",
         lat: 35.401, lon: 132.685,
-        start: 200, end: 300,
+        start: 500, end: 1500,
         confidence: "inferred",
         description: "A village elder leads a ritual at the edge of flooded rice paddies. Hemp-clothed farmers watch from the bank. Bronze bells (dotaku) hang from a wooden frame, rung to call the rice spirit. Himiko may rule this region from her unseen palace.",
         source_notes: "Dotaku bronze bells are archaeologically attested in Yayoi contexts in the Kinki/Izumo regions. Ritual agricultural ceremonies inferred from material culture. Himiko attested in Wei Zhi c.240 CE.",
@@ -369,7 +371,7 @@
         title: "Angkor Wat at its consecration",
         era: "MEDIEVAL",
         lat: 13.4125, lon: 103.8670,
-        start: 1113, end: 1150,
+        start: 500, end: 1500,
         confidence: "inferred",
         description: "Angkor Wat under Suryavarman II — the largest religious monument ever built. Thousands of workers complete the final stone carvings; Brahmin priests consecrate the central tower. The sandstone gleams raw and white, not yet weathered. The moat reflects five towers at dawn.",
         source_notes: "Angkor Wat construction dated c.1113–1150 CE under Suryavarman II. Sanskrit inscriptions confirm dedication to Vishnu. Scale confirmed by LIDAR surveys. Sandstone was originally white.",
@@ -381,7 +383,7 @@
         title: "Tenochtitlan — island city at its height",
         era: "MEDIEVAL",
         lat: 19.4326, lon: -99.1332,
-        start: 1400, end: 1519,
+        start: 500, end: 1500,
         confidence: "inferred",
         description: "Tenochtitlan — an island city of 200,000 people in the middle of Lake Texcoco, connected to the mainland by great causeways. The Templo Mayor pyramid rises in the centre. Canoes bring food from the floating gardens (chinampas). Spanish conquerors will later call it more beautiful than any city in Europe.",
         source_notes: "Population and layout of Tenochtitlan confirmed by archaeological excavations and Spanish eyewitness accounts. Chinampas attested; Templo Mayor excavated. Cortés described the city in letters of 1519.",
@@ -395,7 +397,7 @@
         title: "Edo — riverside morning market",
         era: "EARLYMODERN",
         lat: 35.6762, lon: 139.6503,
-        start: 1700, end: 1850,
+        start: 1500, end: 1900,
         confidence: "inferred",
         description: "The Nihonbashi fish market at dawn — the commercial heart of Edo, the world's largest city at 1 million people. Merchants in happi coats call prices; sashimi-grade tuna are unloaded from boats. The wooden Nihonbashi bridge is visible. This is the world the Impressionists would one day be transfixed by.",
         source_notes: "Nihonbashi market is extensively documented in Edo-period woodblock prints (ukiyo-e) and records. Population of Edo reached ~1 million by 1700. Tuna trade well attested.",
@@ -407,7 +409,7 @@
         title: "Fatehpur Sikri — Akbar's court",
         era: "EARLYMODERN",
         lat: 27.0940, lon: 77.6600,
-        start: 1571, end: 1585,
+        start: 1500, end: 1900,
         confidence: "inferred",
         description: "Emperor Akbar holds court in the Diwan-i-Khas at Fatehpur Sikri. Hindu, Muslim, Jain, and Jesuit scholars debate theology around the central pillar throne. Akbar cannot read but has all books read to him. This is the most religiously tolerant court in the 16th-century world.",
         source_notes: "Fatehpur Sikri was Akbar's capital 1571–1585. Diwan-i-Khas confirmed. Ibadat Khana religious debates are documented in Abul Fazl's Akbarnama. Jesuit visits confirmed by missionary records.",
@@ -419,7 +421,7 @@
         title: "Constantinople — Hagia Sophia under Ottoman rule",
         era: "EARLYMODERN",
         lat: 41.0086, lon: 28.9802,
-        start: 1520, end: 1620,
+        start: 1500, end: 1900,
         confidence: "inferred",
         description: "Friday prayer in the Hagia Sophia under Suleiman the Magnificent. Thousands of worshippers fill the vast interior, recently converted from a Byzantine church. Light pours through clerestory windows onto Byzantine mosaics now partially covered with calligraphy. The call to prayer echoes across the Golden Horn.",
         source_notes: "Hagia Sophia converted to mosque after 1453. Suleiman I reigned 1520–1566. Interior modifications including minarets and calligraphy panels are historically confirmed.",
@@ -431,7 +433,7 @@
         title: "Machu Picchu — daily life at the royal estate",
         era: "EARLYMODERN",
         lat: -13.1631, lon: -72.5450,
-        start: 1450, end: 1530,
+        start: 1500, end: 1900,
         confidence: "inferred",
         description: "Machu Picchu as a functioning royal estate for Sapa Inca Pachacuti. Llamas graze on the terraces; acllas (chosen women) weave fine cloth in the compound. The Intihuatana stone catches the solstice sunrise. Cloud forest mist drifts through the granite city. No wheels, no writing — but extraordinary stonework.",
         source_notes: "Machu Picchu dated to c.1450 CE; attributed to Pachacuti. Function as royal estate confirmed by recent research. Acllas documented in Spanish colonial sources. Intihuatana's astronomical function proposed by archaeologists.",
@@ -445,7 +447,7 @@
         title: "Tokyo — Meiji modernisation",
         era: "MODERN",
         lat: 35.6762, lon: 139.6503,
-        start: 1880, end: 1912,
+        start: 1900, end: 1980,
         confidence: "attested",
         description: "Ginza in Meiji-era Tokyo — a street that embodies Japan's self-transformation. Brick European-style buildings line the avenue alongside traditional shops. Men in Western suits walk beside women in kimono. Gas lamps at dusk. Japan has gone from feudal isolation to global power in a single generation.",
         source_notes: "Ginza brick district built 1872 after fire. Gas lamps introduced 1874. Meiji period 1868–1912. Photographic and illustrated records extensively document this street in transition.",
@@ -457,7 +459,7 @@
         title: "Harlem Renaissance — jazz club at midnight",
         era: "MODERN",
         lat: 40.8116, lon: -73.9465,
-        start: 1920, end: 1935,
+        start: 1900, end: 1980,
         confidence: "inferred",
         description: "A Harlem jazz club at midnight — the Cotton Club era. A trumpet player improvises over a rhythm section; elegantly dressed patrons at candlelit tables. Duke Ellington or Louis Armstrong might be on that stage. This is the cultural explosion that changed American music forever.",
         source_notes: "Cotton Club operated 1923–1940 at 142nd and Lenox. Duke Ellington performed there 1927–1931. Harlem Renaissance documented extensively in photographs and memoirs.",
@@ -469,7 +471,7 @@
         title: "Lahore train station — Partition 1947",
         era: "MODERN",
         lat: 31.5204, lon: 74.3587,
-        start: 1947, end: 1947,
+        start: 1900, end: 1980,
         confidence: "attested",
         description: "Lahore station during the Partition of British India — one of history's largest forced migrations. Families with bundled possessions crowd onto trains. Some go to Pakistan, some to India. The platform is a scene of both reunion and desperate farewell. Fourteen million people will be displaced.",
         source_notes: "Partition of India occurred August 1947. Lahore was a major transit point. 14 million displaced; 200,000–2 million killed. Documented in photographs, oral histories, and literature.",
@@ -481,7 +483,7 @@
         title: "Houston Mission Control — Moon landing",
         era: "MODERN",
         lat: 29.5586, lon: -95.0890,
-        start: 1969, end: 1969,
+        start: 1900, end: 1980,
         confidence: "attested",
         description: "Mission Control, Houston, July 20 1969. Controllers in white short-sleeved shirts and thin ties stare at glowing monitors as Neil Armstrong descends the Eagle's ladder. The room erupts — handshakes, tears, cigars. Six hundred million people watch on television. It is the most-watched moment in human history.",
         source_notes: "Apollo 11 Moon landing July 20 1969. Mission Control in Building 30, Johnson Space Center. Controller attire and room layout documented photographically. 600 million viewers estimated.",
@@ -563,10 +565,17 @@
     viewer.scene.globe.enableLighting = false;
     viewer.scene.skyAtmosphere.show = true;
 
-    // Start view (Japan-ish)
-    viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(132.8, 35.4, 2200000.0)
+    // Define home position — centred over Europe/Africa, full Earth view
+    const HOME_DESTINATION = Cesium.Cartesian3.fromDegrees(20.0, 20.0, 22000000.0);
+
+    // Override the home button to use our position
+    viewer.homeButton.viewModel.command.beforeExecute.addEventListener(e => {
+      e.cancel = true;
+      viewer.camera.flyTo({ destination: HOME_DESTINATION });
     });
+
+    // Start with a full Earth view
+    viewer.camera.flyTo({ destination: HOME_DESTINATION });
 
     // ---------- UI state ----------
     const yearSlider = document.getElementById("yearSlider");
@@ -607,10 +616,24 @@
     }
 
     function sceneVisibleForFilters(scene) {
-      const inTime = scene.start <= selectedYear && scene.end >= selectedYear;
-      const inEra = (selectedEra === "ALL") || (scene.era === selectedEra);
-      return inTime && inEra;
+      if (selectedEra === "ALL") return true;
+      if (selectedEra === "TIME") return scene.start <= selectedYear && scene.end >= selectedYear;
+      return scene.era === selectedEra;
     }
+
+    // ---------- Timeline ----------
+    yearSlider.addEventListener("input", () => {
+      selectedYear = parseInt(yearSlider.value, 10);
+      updateYearLabel();
+      // Switch to time-based filtering mode
+      selectedEra = "TIME";
+      eraButtons.forEach(b => b.classList.remove("active"));
+      yearSlider.disabled = false;
+      yearSlider.style.opacity = "1";
+      yearSlider.style.cursor = "pointer";
+      document.getElementById("yearLabel").style.opacity = "1";
+      rebuildEntities();
+    });
 
     function rebuildEntities() {
       viewer.entities.removeAll();
@@ -727,18 +750,33 @@
 
     closeBtn.addEventListener("click", closePanel);
 
-    // ---------- Timeline ----------
-    yearSlider.addEventListener("input", () => {
-      selectedYear = parseInt(yearSlider.value, 10);
-      updateYearLabel();
-      rebuildEntities();
-    });
+    function updateSliderState() {
+      const isAll = selectedEra === "ALL";
+      yearSlider.disabled = isAll;
+      yearSlider.style.opacity = isAll ? "0.3" : "1";
+      yearSlider.style.cursor = isAll ? "not-allowed" : "pointer";
+      document.getElementById("yearLabel").style.opacity = isAll ? "0.3" : "1";
+    }
 
-    // ---------- Era buttons ----------
+    const eraYearMap = {
+      ALL: -2560,
+      ANCIENT: -2000,
+      CLASSICAL: 200,
+      MEDIEVAL: 800,
+      EARLYMODERN: 1600,
+      MODERN: 1930,
+    };
+
     const eraButtons = Array.from(document.querySelectorAll(".eraBtn"));
     function setEra(era) {
       selectedEra = era;
       eraButtons.forEach(b => b.classList.toggle("active", b.dataset.era === era));
+      if (era !== "ALL" && eraYearMap[era] !== undefined) {
+        selectedYear = eraYearMap[era];
+        yearSlider.value = selectedYear;
+        updateYearLabel();
+      }
+      updateSliderState();
       rebuildEntities();
     }
     eraButtons.forEach(btn => btn.addEventListener("click", () => setEra(btn.dataset.era)));
