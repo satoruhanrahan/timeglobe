@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TimeGlobe Prototype (Cesium) — Terrain Basemap</title>
+
+  <!-- CesiumJS (CDN) -->
+  <link rel="stylesheet" href="https://unpkg.com/cesium@1.121/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://unpkg.com/cesium@1.121/Build/Cesium/Cesium.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    #app {
+      height: 100%;
+      width: 100%;
+      position: relative;
+    }
+
+    #cesiumContainer {
+      height: 100%;
+      width: 100%;
+    }
+
+    /* Top controls */
+    #ui {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(10, 12, 16, 0.72);
+      color: #fff;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      z-index: 10;
+    }
+
+    #ui .group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    #yearLabel {
+      min-width: 140px;
+      font-weight: 700;
+    }
+
+    #yearSlider {
+      width: min(520px, 45vw);
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    button.active {
+      background: rgba(255, 255, 255, 0.28);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Right panel */
+    #panel {
+      position: absolute;
+      right: 12px;
+      top: 72px;
+      width: min(420px, calc(100vw - 24px));
+      max-height: calc(100vh - 84px);
+      overflow: auto;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(10, 12, 16, 0.78);
+      color: #fff;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      z-index: 10;
+      display: none;
+    }
+
+    #panelHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #panelTitle {
+      font-size: 16px;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    #closeBtn {
+      padding: 6px 10px;
+    }
+
+    #meta {
+      margin: 8px 0 10px;
+      font-size: 13px;
+      line-height: 1.35;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    #badgeRow {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    video {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    #hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(10, 12, 16, 0.58);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 12px;
+      z-index: 10;
+      max-width: 560px;
+      line-height: 1.35;
+      backdrop-filter: blur(8px);
+    }
+
+    #toast {
+      position: absolute;
+      left: 12px;
+      top: 72px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(10, 12, 16, 0.75);
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 12px;
+      z-index: 11;
+      max-width: 520px;
+      line-height: 1.35;
+      backdrop-filter: blur(8px);
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="cesiumContainer"></div>
+
+    <div id="ui">
+      <div class="group">
+        <div id="yearLabel">Year: <span id="yearText"></span></div>
+        <input id="yearSlider" type="range" min="-3000" max="1980" step="1" value="0" />
+      </div>
+
+      <div class="group" style="margin-left:auto;">
+        <button class="eraBtn" data-era="ALL">All</button>
+        <button class="eraBtn" data-era="ANCIENT">Ancient</button>
+        <button class="eraBtn" data-era="CLASSICAL">Classical</button>
+        <button class="eraBtn" data-era="MEDIEVAL">Medieval</button>
+        <button class="eraBtn" data-era="EARLYMODERN">Early Modern</button>
+        <button class="eraBtn" data-era="MODERN">Modern</button>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <div id="panel">
+      <div id="panelHeader">
+        <h3 id="panelTitle"></h3>
+        <button id="closeBtn">Close</button>
+      </div>
+      <div id="badgeRow"></div>
+      <div id="meta"></div>
+      <video id="player" controls playsinline></video>
+      <div id="sources" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.78)"></div>
+    </div>
+
+    <div id="hint">
+      <b>Tips:</b> Drag the year slider to filter pins by era. Click a pin to see the scene and its AI video prompt.
+      <br />
+      <span style="display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+        <span>🟡 Ancient</span>
+        <span>🔵 Classical</span>
+        <span>🟢 Medieval</span>
+        <span>🟠 Early Modern</span>
+        <span>🟣 Modern</span>
+      </span>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Sample curated dataset ----------
+    // Years: BCE as negative. Each scene shows if start <= year <= end.
+    // Replace video_url with your AI-generated videos later.
+    const DEMO_VIDEO = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+    const github_folder = "https://raw.githubusercontent.com/satoruhanrahan/timeglobe-videos/main/";
+    const giza_1_VIDEO = "giza_1.mp4";
+    const indus_1_VIDEO = "indus_1.mp4";
+    const olmec_1_VIDEO = "olmec_1.mp4";
+
+    const scenes = [
+
+      // ── ANCIENT (3000–500 BCE) ──────────────────────────────────
+      {
+        id: "giza_1",
+        title: "Giza plateau during pyramid construction",
+        era: "ANCIENT",
+        lat: 29.9792, lon: 31.1342,
+        start: -2560, end: -2540,
+        confidence: "inferred",
+        description: "Workers haul limestone blocks on wooden sledges along a ramp. Overseers direct teams; the half-built Great Pyramid rises behind. Dust, heat, and the sound of stone on stone. Workers were paid labourers, not slaves — they ate well and received medical care.",
+        source_notes: "Workforce villages excavated at Giza confirm paid labour. Ramp design is debated; internal spiral ramp is one current hypothesis. Sledge haulage is archaeologically attested.",
+        production_brief: "Images created using ChatGPT (DALL-E). Animated using Pika. Clips edited and merged using CapCut.",
+        video_url: github_folder + giza_1_VIDEO
+      },
+      {
+        id: "indus_1",
+        title: "Mohenjo-daro street life",
+        era: "ANCIENT",
+        lat: 27.3244, lon: 68.1375,
+        start: -2500, end: -1900,
+        confidence: "inferred",
+        description: "A busy street in the world's first planned city. Baked brick buildings line wide, grid-pattern lanes. A merchant weighs goods on standardised bronze weights; children play near a drainage channel. The Indus script remains undeciphered.",
+        source_notes: "Grid street layout, standardised weights, and covered drainage are archaeologically attested at Mohenjo-daro. Daily life details are reconstructed from artefacts. Script not yet translated.",
+        production_brief: "Images created using ChatGPT (DALL-E). Animated using Pika. Clips edited and merged using CapCut.",
+        video_url: github_folder + indus_1_VIDEO
+      },
+      {
+        id: "olmec_1",
+        title: "La Venta ceremonial centre",
+        era: "ANCIENT",
+        lat: 18.1070, lon: -94.0400,
+        start: -900, end: -400,
+        confidence: "inferred",
+        description: "Priests perform a ritual before a colossal basalt head. Green jungle surrounds the earthen pyramid. Olmec blue-green jade figurines are arranged in the earth below as a cache offering. The Olmec are the mother culture of Mesoamerica.",
+        source_notes: "Colossal heads and jade caches are archaeologically attested at La Venta. Ritual use of the site is confirmed; specific ceremony is reconstructed from archaeological context.",
+        production_brief: "Images created using ChatGPT (DALL-E). Animated using Pika. Clips edited and merged using CapCut.",
+        video_url: github_folder + olmec_1_VIDEO
+      },
+
+      // ── CLASSICAL (500 BCE – 500 CE) ────────────────────────────
+      {
+        id: "athens_1",
+        title: "Athens agora at midday",
+        era: "CLASSICAL",
+        lat: 37.9755, lon: 23.7219,
+        start: -430, end: -400,
+        confidence: "inferred",
+        description: "The heart of Athenian democracy. Citizens in white chitons argue philosophy and politics beneath stoa colonnades. A silver coin changes hands at a money-changer's table. Socrates might be here, barefoot as usual. The Acropolis gleams with fresh white marble above.",
+        source_notes: "Agora layout extensively excavated by American School of Classical Studies. Stoa of Attalos reconstructed. Money-changing attested in sources. Socrates active in Athens c.470–399 BCE.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "silk_road_1",
+        title: "Dunhuang oasis caravan stop",
+        era: "CLASSICAL",
+        lat: 40.1421, lon: 94.6618,
+        start: 100, end: 300,
+        confidence: "inferred",
+        description: "A Silk Road caravan rests at the Dunhuang oasis. Bactrian camels are unloaded; merchants from Parthia, China, and India exchange silk, spices, and glassware in a multilingual bazaar. The nearby caves will one day hold the world's oldest printed book.",
+        source_notes: "Dunhuang was a major Silk Road waystation confirmed by Han dynasty records and archaeological finds. Multicultural merchant mixing is well documented. Cave paintings and manuscripts confirm cultural exchange.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "rome_1",
+        title: "Rome — the Forum at its height",
+        era: "CLASSICAL",
+        lat: 41.8925, lon: 12.4853,
+        start: 100, end: 180,
+        confidence: "inferred",
+        description: "The Roman Forum in Trajan's era — the political and commercial heart of a million-person city. Senators in togas, merchants, slaves, and soldiers share the marble-paved space. The Colosseum is visible to the east. Latin is the language of power; Greek, the language of culture.",
+        source_notes: "Forum layout and population estimates for imperial Rome are well established. Trajan's column and markets are contemporary. Multilingual nature of Rome confirmed by inscriptions.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "maya_1",
+        title: "Tikal — temple city at dawn",
+        era: "CLASSICAL",
+        lat: 17.2220, lon: -89.6237,
+        start: 400, end: 800,
+        confidence: "inferred",
+        description: "Dawn over the Maya city of Tikal. Temple I rises 47 metres above the jungle canopy. Priests descend the steep staircase after a dawn ceremony. Howler monkeys call from the ceiba trees. At its peak Tikal held 100,000 people and controlled a vast trade network.",
+        source_notes: "Tikal extensively excavated; Temple I dated to c.732 CE. Population estimates 60,000–100,000. Dawn ceremonies inferred from Maya calendar and astronomical alignments.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+
+      // ── MEDIEVAL (500–1500 CE) ──────────────────────────────────
+      {
+        id: "tang_1",
+        title: "Chang'an — Tang Dynasty capital",
+        era: "MEDIEVAL",
+        lat: 34.2658, lon: 108.9541,
+        start: 700, end: 800,
+        confidence: "inferred",
+        description: "Chang'an is the largest city in the world — one million people within its walls. A cosmopolitan bazaar in the West Market mixes Tang Chinese, Sogdian merchants, Arab traders, and Japanese students. Camel caravans, silk shops, and tea houses line broad avenues.",
+        source_notes: "Chang'an's grid layout and population confirmed by Tang dynasty records. West Market's international character documented in poetry and government records. Japanese students confirmed by historical sources.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "mali_1",
+        title: "Timbuktu — centre of Islamic scholarship",
+        era: "MEDIEVAL",
+        lat: 16.7735, lon: -3.0074,
+        start: 1300, end: 1500,
+        confidence: "inferred",
+        description: "Timbuktu at its height under the Mali Empire. The Sankore mosque and university hold 25,000 students — the largest university in the medieval world. Scholars copy manuscripts by candlelight; gold and salt caravans pass through the mud-brick streets outside.",
+        source_notes: "Sankore University's size documented in Arabic and West African sources. Mali Empire gold-salt trade well attested. Manuscript tradition confirmed by surviving Timbuktu manuscripts.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "yayoi_1",
+        title: "Yayoi Japan — rice paddy ceremony",
+        era: "MEDIEVAL",
+        lat: 35.401, lon: 132.685,
+        start: 200, end: 300,
+        confidence: "inferred",
+        description: "A village elder leads a ritual at the edge of flooded rice paddies. Hemp-clothed farmers watch from the bank. Bronze bells (dotaku) hang from a wooden frame, rung to call the rice spirit. Himiko may rule this region from her unseen palace.",
+        source_notes: "Dotaku bronze bells are archaeologically attested in Yayoi contexts in the Kinki/Izumo regions. Ritual agricultural ceremonies inferred from material culture. Himiko attested in Wei Zhi c.240 CE.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "angkor_1",
+        title: "Angkor Wat at its consecration",
+        era: "MEDIEVAL",
+        lat: 13.4125, lon: 103.8670,
+        start: 1113, end: 1150,
+        confidence: "inferred",
+        description: "Angkor Wat under Suryavarman II — the largest religious monument ever built. Thousands of workers complete the final stone carvings; Brahmin priests consecrate the central tower. The sandstone gleams raw and white, not yet weathered. The moat reflects five towers at dawn.",
+        source_notes: "Angkor Wat construction dated c.1113–1150 CE under Suryavarman II. Sanskrit inscriptions confirm dedication to Vishnu. Scale confirmed by LIDAR surveys. Sandstone was originally white.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "aztec_1",
+        title: "Tenochtitlan — island city at its height",
+        era: "MEDIEVAL",
+        lat: 19.4326, lon: -99.1332,
+        start: 1400, end: 1519,
+        confidence: "inferred",
+        description: "Tenochtitlan — an island city of 200,000 people in the middle of Lake Texcoco, connected to the mainland by great causeways. The Templo Mayor pyramid rises in the centre. Canoes bring food from the floating gardens (chinampas). Spanish conquerors will later call it more beautiful than any city in Europe.",
+        source_notes: "Population and layout of Tenochtitlan confirmed by archaeological excavations and Spanish eyewitness accounts. Chinampas attested; Templo Mayor excavated. Cortés described the city in letters of 1519.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+
+      // ── EARLY MODERN (1500–1900 CE) ─────────────────────────────
+      {
+        id: "edo_1",
+        title: "Edo — riverside morning market",
+        era: "EARLYMODERN",
+        lat: 35.6762, lon: 139.6503,
+        start: 1700, end: 1850,
+        confidence: "inferred",
+        description: "The Nihonbashi fish market at dawn — the commercial heart of Edo, the world's largest city at 1 million people. Merchants in happi coats call prices; sashimi-grade tuna are unloaded from boats. The wooden Nihonbashi bridge is visible. This is the world the Impressionists would one day be transfixed by.",
+        source_notes: "Nihonbashi market is extensively documented in Edo-period woodblock prints (ukiyo-e) and records. Population of Edo reached ~1 million by 1700. Tuna trade well attested.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "mughal_1",
+        title: "Fatehpur Sikri — Akbar's court",
+        era: "EARLYMODERN",
+        lat: 27.0940, lon: 77.6600,
+        start: 1571, end: 1585,
+        confidence: "inferred",
+        description: "Emperor Akbar holds court in the Diwan-i-Khas at Fatehpur Sikri. Hindu, Muslim, Jain, and Jesuit scholars debate theology around the central pillar throne. Akbar cannot read but has all books read to him. This is the most religiously tolerant court in the 16th-century world.",
+        source_notes: "Fatehpur Sikri was Akbar's capital 1571–1585. Diwan-i-Khas confirmed. Ibadat Khana religious debates are documented in Abul Fazl's Akbarnama. Jesuit visits confirmed by missionary records.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "istanbul_1",
+        title: "Constantinople — Hagia Sophia under Ottoman rule",
+        era: "EARLYMODERN",
+        lat: 41.0086, lon: 28.9802,
+        start: 1520, end: 1620,
+        confidence: "inferred",
+        description: "Friday prayer in the Hagia Sophia under Suleiman the Magnificent. Thousands of worshippers fill the vast interior, recently converted from a Byzantine church. Light pours through clerestory windows onto Byzantine mosaics now partially covered with calligraphy. The call to prayer echoes across the Golden Horn.",
+        source_notes: "Hagia Sophia converted to mosque after 1453. Suleiman I reigned 1520–1566. Interior modifications including minarets and calligraphy panels are historically confirmed.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "inca_1",
+        title: "Machu Picchu — daily life at the royal estate",
+        era: "EARLYMODERN",
+        lat: -13.1631, lon: -72.5450,
+        start: 1450, end: 1530,
+        confidence: "inferred",
+        description: "Machu Picchu as a functioning royal estate for Sapa Inca Pachacuti. Llamas graze on the terraces; acllas (chosen women) weave fine cloth in the compound. The Intihuatana stone catches the solstice sunrise. Cloud forest mist drifts through the granite city. No wheels, no writing — but extraordinary stonework.",
+        source_notes: "Machu Picchu dated to c.1450 CE; attributed to Pachacuti. Function as royal estate confirmed by recent research. Acllas documented in Spanish colonial sources. Intihuatana's astronomical function proposed by archaeologists.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+
+      // ── MODERN (1900 CE – present) ──────────────────────────────
+      {
+        id: "meiji_1",
+        title: "Tokyo — Meiji modernisation",
+        era: "MODERN",
+        lat: 35.6762, lon: 139.6503,
+        start: 1880, end: 1912,
+        confidence: "attested",
+        description: "Ginza in Meiji-era Tokyo — a street that embodies Japan's self-transformation. Brick European-style buildings line the avenue alongside traditional shops. Men in Western suits walk beside women in kimono. Gas lamps at dusk. Japan has gone from feudal isolation to global power in a single generation.",
+        source_notes: "Ginza brick district built 1872 after fire. Gas lamps introduced 1874. Meiji period 1868–1912. Photographic and illustrated records extensively document this street in transition.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "harlem_1",
+        title: "Harlem Renaissance — jazz club at midnight",
+        era: "MODERN",
+        lat: 40.8116, lon: -73.9465,
+        start: 1920, end: 1935,
+        confidence: "inferred",
+        description: "A Harlem jazz club at midnight — the Cotton Club era. A trumpet player improvises over a rhythm section; elegantly dressed patrons at candlelit tables. Duke Ellington or Louis Armstrong might be on that stage. This is the cultural explosion that changed American music forever.",
+        source_notes: "Cotton Club operated 1923–1940 at 142nd and Lenox. Duke Ellington performed there 1927–1931. Harlem Renaissance documented extensively in photographs and memoirs.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "partition_1",
+        title: "Lahore train station — Partition 1947",
+        era: "MODERN",
+        lat: 31.5204, lon: 74.3587,
+        start: 1947, end: 1947,
+        confidence: "attested",
+        description: "Lahore station during the Partition of British India — one of history's largest forced migrations. Families with bundled possessions crowd onto trains. Some go to Pakistan, some to India. The platform is a scene of both reunion and desperate farewell. Fourteen million people will be displaced.",
+        source_notes: "Partition of India occurred August 1947. Lahore was a major transit point. 14 million displaced; 200,000–2 million killed. Documented in photographs, oral histories, and literature.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      },
+      {
+        id: "apollo_1",
+        title: "Houston Mission Control — Moon landing",
+        era: "MODERN",
+        lat: 29.5586, lon: -95.0890,
+        start: 1969, end: 1969,
+        confidence: "attested",
+        description: "Mission Control, Houston, July 20 1969. Controllers in white short-sleeved shirts and thin ties stare at glowing monitors as Neil Armstrong descends the Eagle's ladder. The room erupts — handshakes, tears, cigars. Six hundred million people watch on television. It is the most-watched moment in human history.",
+        source_notes: "Apollo 11 Moon landing July 20 1969. Mission Control in Building 30, Johnson Space Center. Controller attire and room layout documented photographically. 600 million viewers estimated.",
+        production_brief: "Video not yet produced.",
+        video_url: DEMO_VIDEO
+      }
+    ];
+
+    // ---------- Cesium setup ----------
+    // Disable Cesium Ion to prevent 401 token errors
+    Cesium.Ion.defaultAccessToken = "";
+
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      animation: false,
+      timeline: false,
+      sceneModePicker: false,
+      baseLayerPicker: false,
+      homeButton: true,
+      geocoder: false,
+      navigationHelpButton: false,
+      fullscreenButton: false,
+      infoBox: false,
+      selectionIndicator: false,
+      shouldAnimate: false,
+      terrainProvider: new Cesium.EllipsoidTerrainProvider()
+    });
+
+    // ---------- Basemap: Terrain / shaded relief ----------
+    // Use an XYZ tile template (more reliable than provider wrappers in some CDN setups).
+    // If this tile source fails (network / rate limits), we fallback to OpenStreetMap.
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => { t.style.display = "none"; }, 6000);
+    }
+
+    function setShadedReliefBasemap() {
+      viewer.imageryLayers.removeAll();
+
+      // Esri World Shaded Relief (map-like terrain backdrop; minimal modern cues)
+      const relief = viewer.imageryLayers.addImageryProvider(
+        new Cesium.UrlTemplateImageryProvider({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}",
+          credit: "Basemap: Esri World Shaded Relief"
+        })
+      );
+
+      // Slight tuning (keeps it readable without looking modern)
+      relief.brightness = 1.05;
+      relief.contrast = 1.10;
+      relief.saturation = 0.95;
+      relief.gamma = 0.95;
+
+      // If tiles fail to load, fallback to OSM
+      const fallback = (e) => {
+        // Avoid repeated fallbacks
+        if (setShadedReliefBasemap._fellBack) return;
+        setShadedReliefBasemap._fellBack = true;
+
+        console.warn("Basemap tiles failed, falling back to OpenStreetMap:", e);
+        showToast("Shaded relief tiles failed to load — falling back to OpenStreetMap.");
+
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+          url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          credit: "© OpenStreetMap contributors"
+        }));
+      };
+
+      // Hook Cesium's global render error event to catch tile load issues
+      viewer.scene.renderError.addEventListener(fallback);
+    }
+
+    setShadedReliefBasemap();
+
+    // Full daylight — no day/night split
+    viewer.scene.globe.enableLighting = false;
+    viewer.scene.skyAtmosphere.show = true;
+
+    // Start view (Japan-ish)
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(132.8, 35.4, 2200000.0)
+    });
+
+    // ---------- UI state ----------
+    const yearSlider = document.getElementById("yearSlider");
+    const yearText = document.getElementById("yearText");
+    const panel = document.getElementById("panel");
+    const panelTitle = document.getElementById("panelTitle");
+    const meta = document.getElementById("meta");
+    const player = document.getElementById("player");
+    const sources = document.getElementById("sources");
+    const badgeRow = document.getElementById("badgeRow");
+    const closeBtn = document.getElementById("closeBtn");
+
+    let selectedEra = "ALL";
+    let selectedYear = parseInt(yearSlider.value, 10);
+
+    function formatYear(y) {
+      if (y < 0) return `${Math.abs(y)} BCE`;
+      return `${y} CE`;
+    }
+
+    function updateYearLabel() {
+      yearText.textContent = formatYear(selectedYear);
+    }
+    updateYearLabel();
+
+    // ---------- Pins ----------
+    const pinBuilder = new Cesium.PinBuilder();
+
+    function pinForEra(era) {
+      const color =
+        era === "ANCIENT" ? Cesium.Color.GOLD :
+          era === "CLASSICAL" ? Cesium.Color.CORNFLOWERBLUE :
+            era === "MEDIEVAL" ? Cesium.Color.MEDIUMSEAGREEN :
+              era === "EARLYMODERN" ? Cesium.Color.CORAL :
+                era === "MODERN" ? Cesium.Color.MEDIUMPURPLE :
+                  Cesium.Color.SILVER;
+      return pinBuilder.fromColor(color, 48).toDataURL();
+    }
+
+    function sceneVisibleForFilters(scene) {
+      const inTime = scene.start <= selectedYear && scene.end >= selectedYear;
+      const inEra = (selectedEra === "ALL") || (scene.era === selectedEra);
+      return inTime && inEra;
+    }
+
+    function rebuildEntities() {
+      viewer.entities.removeAll();
+
+      const visible = scenes.filter(sceneVisibleForFilters);
+
+      for (const s of visible) {
+        viewer.entities.add({
+          id: s.id,
+          name: s.title,
+          position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat),
+          billboard: {
+            image: pinForEra(s.era),
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            scale: 1.0
+          },
+          label: {
+            text: s.title,
+            show: false,
+            font: "13px system-ui",
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, 10),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+          },
+          properties: {
+            scene: s
+          }
+        });
+      }
+
+      if (!visible.length) closePanel();
+    }
+
+    rebuildEntities();
+
+    // Hover label
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction((movement) => {
+      const picked = viewer.scene.pick(movement.endPosition);
+      viewer.entities.values.forEach(e => { if (e.label) e.label.show = false; });
+      if (Cesium.defined(picked) && picked.id && picked.id.label) {
+        picked.id.label.show = true;
+      }
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+    // Click pin -> open panel
+    handler.setInputAction((click) => {
+      const picked = viewer.scene.pick(click.position);
+      if (Cesium.defined(picked) && picked.id && picked.id.properties) {
+        const s = picked.id.properties.scene.getValue(Cesium.JulianDate.now());
+        openPanel(s);
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    // ---------- Panel ----------
+    function openPanel(scene) {
+      panelTitle.textContent = scene.title;
+
+      badgeRow.innerHTML = "";
+      const eraBadge = document.createElement("div");
+      eraBadge.className = "badge";
+      eraBadge.textContent = `Era: ${scene.era}`;
+
+      const timeBadge = document.createElement("div");
+      timeBadge.className = "badge";
+      timeBadge.textContent = `Time: ${formatYear(scene.start)} → ${formatYear(scene.end)}`;
+
+      const confBadge = document.createElement("div");
+      confBadge.className = "badge";
+      confBadge.textContent = `Confidence: ${scene.confidence}`;
+
+      badgeRow.appendChild(eraBadge);
+      badgeRow.appendChild(timeBadge);
+      badgeRow.appendChild(confBadge);
+
+      meta.textContent = scene.description;
+      sources.innerHTML = "";
+      if (scene.source_notes) {
+        const sn = document.createElement("div");
+        sn.style.marginBottom = "8px";
+        sn.innerHTML = `<b>Historical notes:</b> ${scene.source_notes}`;
+        sources.appendChild(sn);
+      }
+      if (scene.production_brief) {
+        const vp = document.createElement("div");
+        vp.style.marginTop = "8px";
+        vp.style.padding = "8px";
+        vp.style.borderRadius = "8px";
+        vp.style.background = "rgba(255,255,255,0.06)";
+        vp.style.borderLeft = "3px solid rgba(255,200,80,0.5)";
+        vp.innerHTML = `<b style="color:rgba(255,200,80,0.9);font-size:11px;letter-spacing:.05em">AI PRODUCTION PROCESS</b><br/><span style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;white-space:pre-line">${scene.production_brief}</span>`;
+        sources.appendChild(vp);
+      }
+
+      // Load video
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+      player.src = scene.video_url;
+      player.play().catch(() => { /* autoplay might be blocked */ });
+
+      panel.style.display = "block";
+    }
+
+    function closePanel() {
+      panel.style.display = "none";
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+    }
+
+    closeBtn.addEventListener("click", closePanel);
+
+    // ---------- Timeline ----------
+    yearSlider.addEventListener("input", () => {
+      selectedYear = parseInt(yearSlider.value, 10);
+      updateYearLabel();
+      rebuildEntities();
+    });
+
+    // ---------- Era buttons ----------
+    const eraButtons = Array.from(document.querySelectorAll(".eraBtn"));
+    function setEra(era) {
+      selectedEra = era;
+      eraButtons.forEach(b => b.classList.toggle("active", b.dataset.era === era));
+      rebuildEntities();
+    }
+    eraButtons.forEach(btn => btn.addEventListener("click", () => setEra(btn.dataset.era)));
+    setEra("ALL");
+  </script>
+</body>
+
+</html>
